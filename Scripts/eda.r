@@ -56,6 +56,10 @@ x <- model.matrix(success ~ imonth+provstate+suicide+factor(attacktype1)+factor(
 y <- train$success
 
 
-cv.lasso <- cv.glmnet(x, y, family = "binomial", alpha = 1)
+cv.lasso <- cv.glmnet(x, y, family = "binomial", alpha = 1, type.measure = "mse")
 
 plot(cv.lasso)
+
+coef(cv.lasso$lambda.min)
+
+coef(cv.lasso$lambda.1se)
