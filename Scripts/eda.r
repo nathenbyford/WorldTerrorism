@@ -4,6 +4,7 @@ library(ggally)
 library(glmnet)
 library(carets)
 library(leaps)
+library(tree)
 
 data <- read_csv("~/Downloads/globalterrorismdb_0718dist.csv")
 
@@ -60,6 +61,11 @@ cv.lasso <- cv.glmnet(x, y, family = "binomial", alpha = 1, type.measure = "mse"
 
 plot(cv.lasso)
 
-coef(cv.lasso$lambda.min)
+coef(cv.lasso, cv.lasso$lambda.min)
 
-coef(cv.lasso$lambda.1se)
+coef(cv.lasso, cv.lasso$lambda.1se)
+
+
+# Run trees models
+
+model.tree <- tree()
