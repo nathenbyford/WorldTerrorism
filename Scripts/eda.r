@@ -1,3 +1,8 @@
+####################
+## Nathen Byford  ##
+## EDA 4371 Proj  ##
+####################
+
 library(tidyverse)
 library(car)
 library(ggally)
@@ -6,7 +11,7 @@ library(carets)
 library(leaps)
 library(tree)
 
-data <- read_csv("~/Downloads/globalterrorismdb_0718dist.csv")
+data <- read_csv("globalterrorismdb_0718dist.csv")
 
 datus <- data %>% filter(country == 217)
 
@@ -17,6 +22,42 @@ res <- datus %>% select(success)
 
 datus_s <- cbind(res, pred)
 datus_s <- na.omit(datus_s)
+
+## Randomize the data points to preserve National Security
+set.seed(253)
+
+dat_us <- datus_s
+
+attacknum_or <- c(unique(datus_s$attacktype1))
+attacknum_new <- sample(c(1:length(attacknum_or)))
+
+targnum_or <- c(unique(datus_s$targtype1))
+targnum_new <- sample(c(1:length(targnum_or)))
+
+weapnum_or <- c(unique(datus_s$weaptype1))
+weapnum_new <- sample(c(1:length(weapnum_or)))
+
+for (i in 1:8) {
+  v <- attacknum_or[i]
+  k <- attacknum_new[i]
+  ind <- which(datus_s$attacktype1 == v)
+  dat_us$attacktype1[ind] <- k  
+}
+
+for (i in 1:22) {
+  v <- targnum_or[i]
+  k <- targnum_new[i]
+  ind <- which(datus_s$targtype1 == v)
+  dat_us$targtype1[ind] <- k  
+}
+
+for (i in 1:10) {
+  v <- weapnum_or[i]
+  k <- weapnum_new[i]
+  ind <- which(datus_s$weaptype1 == v)
+  dat_us$weaptype1[ind] <- k  
+}
+
 
 ## Split the data 80% 20%
 

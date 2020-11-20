@@ -22,4 +22,19 @@ res <- datus %>% select(success)
 datus_s <- cbind(res, pred)
 datus_s <- na.omit(datus_s)
 
-tm_shape(us_states) + tm_fill() + tm_borders()
+states_ls <- as.list(us_states_df$state)
+
+states <- matrix(nrow = 2, ncol = length(states_ls)+1)
+states <- data.frame(states)
+states[1, 1] <- 'State'
+states[2, 1] <- 'Number of Attacks'
+
+for (i in 1:51) {
+  states[1, i + 1] <- as.character(states_ls[i]) 
+  states[2, i + 1] <- sum(with(datus_s, provstate == as.character(states_ls[i])))
+}
+
+us.states <- us_states %>% arrange(NAME) %>% select(NAME)
+
+
+tm_shape(us_states) + tm_fill(col = 'median_income_10') + tm_borders()
