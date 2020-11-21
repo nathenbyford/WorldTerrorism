@@ -3,11 +3,12 @@
 ## EDA 4371 Proj  ##
 ####################
 
+rm(list = ls())
 library(tidyverse)
 library(car)
-library(ggally)
+library(GGally)
 library(glmnet)
-library(carets)
+library(caret)
 library(leaps)
 library(tree)
 
@@ -27,6 +28,9 @@ datus_s <- na.omit(datus_s)
 set.seed(253)
 
 dat_us <- datus_s
+dat_us <- dat_us %>% rename(., c(targtype = targtype1, 
+                                 attacktype = attacktype1,
+                                 weapontype = weaptype1))
 
 attacknum_or <- c(unique(datus_s$attacktype1))
 attacknum_new <- sample(c(1:length(attacknum_or)))
@@ -58,15 +62,18 @@ for (i in 1:10) {
   dat_us$weaptype1[ind] <- k  
 }
 
+rm(datus)
+rm(datus_s)
+rm(data)
 
 ## Split the data 80% 20%
 
-set.seed(2)
-sample <- sample.int(n = nrow(datus_s), size = floor(.80*nrow(datus_s)), 
+set.seed(8)
+sample <- sample.int(n = nrow(dat_us), size = floor(.80*nrow(dat_us)), 
                      replace = FALSE)
 
-train <- datus_s[sample, ]
-test <- datus_s[-sample, ]
+train <- dat_us[sample, ]
+test <- dat_us[-sample, ]
 
 
 ## make a full model
@@ -91,22 +98,53 @@ plot(step_best)
 
 par(mfrow = c(1, 1))
 
+## Confussion matrix for stepwise model
+
+step.pred <- predict(step_best, test, type = "response")
+step.pred <- as.integer(as.logical(step.pred))
+success <- test$success
+table(step.pred, success)
+
+
 ## Use lasso for model selection
 
 x <- model.matrix(success ~ imonth+provstate+suicide+factor(attacktype1)+factor(targtype1)+
                     factor(weaptype1)+factor(propextent), data = train)[, -1]
 y <- train$success
 
+x_test <- model.matrix(success ~ imonth+provstate+suicide+factor(attacktype1)+factor(targtype1)+
+                         factor(weaptype1)+factor(propextent), data = test)[, -1]
+x_test <- as.data.frame(x_test)
+x_test <- transpose(x_test)
+y_test <- test$success
 
-cv.lasso <- cv.glmnet(x, y, family = "binomial", alpha = 1, type.measure = "mse")
+
+cv.lasso <- cv.glmnet(x, y, family = "binomial", alpha = 1, type.measure = "default", keep = TRUE)
 
 plot(cv.lasso)
+
 
 coef(cv.lasso, cv.lasso$lambda.min)
 
 coef(cv.lasso, cv.lasso$lambda.1se)
 
+lambda_min <- cv.lasso$lambda.min
+
+confusion.glmnet(cv.lasso$lambda.min, newx = x_test, newy = y_test, family = "binomial")
 
 # Run trees models
 
-model.tree <- tree()
+train$success <- as.factor(train$success)
+train$attacktype <- as.factor(train$attacktype)
+train$imonth <- as.factor(train$imonth)
+train$targtype <- as.factor(train$targtype)
+train$weapontype <- as.factor(train$weapontype)
+train$propextent <- as.factor(train$propextent)
+
+model.tree <- tree(success ~ imonth+provstate+suicide+attacktype+targtype1+
+                     weaptype1+propextent, data = train)
+
+plot(model.tree)
+text(model.tree, pretty = 1)
+
+summary(model.tree)

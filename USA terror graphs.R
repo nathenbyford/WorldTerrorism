@@ -2,15 +2,14 @@
 ## STA 4371 Final project
 
 rm(list = ls())
-library(sf)
-library(raster)
 library(tidyverse)
-library(spData)
-library(spDataLarge)
-library(tmap)
-library(leaflet) 
+theme_set(theme_classic())
+library(sf)
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(usmap)
 
-data <- read_csv("~/Downloads/globalterrorismdb_0718dist.csv")
+data <- read_csv("globalterrorismdb_0718dist.csv")
 
 datus <- data %>% filter(country == 217)
 
@@ -22,19 +21,20 @@ res <- datus %>% select(success)
 datus_s <- cbind(res, pred)
 datus_s <- na.omit(datus_s)
 
-states_ls <- as.list(us_states_df$state)
+states_ls <- as.list(unique(datus_s$provstate))
 
-states <- matrix(nrow = 2, ncol = length(states_ls)+1)
+states <- matrix(nrow = 2, ncol = length(states_ls))
 states <- data.frame(states)
 states[1, 1] <- 'State'
 states[2, 1] <- 'Number of Attacks'
 
 for (i in 1:51) {
   states[1, i + 1] <- as.character(states_ls[i]) 
-  states[2, i + 1] <- sum(with(datus_s, provstate == as.character(states_ls[i])))
+  states[2, i + 1] <- as.numeric(sum(with(datus_s, provstate == as.character(states_ls[i]))))
 }
+usa <- us_map()
 
-us.states <- us_states %>% arrange(NAME) %>% select(NAME)
+states.dat <- rbind(usa, states)
 
-
-tm_shape(us_states) + tm_fill(col = 'median_income_10') + tm_borders()
+plot_usmap(regions = "states", values = states) +
+  scale_fill_continuous(name = "Number of Terror Attacks")
