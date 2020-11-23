@@ -11,6 +11,7 @@ library(glmnet)
 library(caret)
 library(leaps)
 library(tree)
+library(randomForest)
 
 data <- read_csv("./Data/globalterrorismdb_0718dist.csv")
 
@@ -135,6 +136,12 @@ idmin = match(cv.lasso$lambda.min, cv.lasso$lambda)
 
 confusion.glmnet(cv.lasso$fit.preval, newy = y, family = "binomial")[[idmin]]
 
+# Ridge regression Model
+
+cv.ridge <- cv.glmnet(x, y, family = "binomial", alpha = 0, type.measure = "mse", keep = TRUE)
+
+plot(cv.ridge)
+
 # Run trees models
 
 train$success <- as.factor(train$success)
@@ -150,4 +157,18 @@ model.tree <- tree(success ~ imonth+provstate+suicide+attacktype+targtype1+
 plot(model.tree)
 text(model.tree, pretty = 1)
 
+tree_pred <- predict(model.tree, train, type = "class")
+
 summary(model.tree)
+
+table(tree_pred, y)
+
+
+rf.model <- randomForest(success ~ imonth+provstate+suicide+attacktype+targtype1+
+                           weaptype1+propextent, data = train)
+
+rf.pred <- predict(rf.model, newdata = train)
+table(rf.pred, y)
+summary(rf.model)
+
+varImpPlot(rf.model)
