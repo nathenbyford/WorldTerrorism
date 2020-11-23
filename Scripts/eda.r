@@ -12,7 +12,7 @@ library(caret)
 library(leaps)
 library(tree)
 
-data <- read_csv("globalterrorismdb_0718dist.csv")
+data <- read_csv("./Data/globalterrorismdb_0718dist.csv")
 
 datus <- data %>% filter(country == 217)
 
@@ -65,6 +65,7 @@ for (i in 1:10) {
 rm(datus)
 rm(datus_s)
 rm(data)
+dat_us <- na.omit(dat_us)
 
 ## Split the data 80% 20%
 
@@ -100,9 +101,9 @@ par(mfrow = c(1, 1))
 
 ## Confussion matrix for stepwise model
 
-step.pred <- predict(step_best, test, type = "response")
+step.pred <- predict(step_best, train, type = "response")
 step.pred <- as.integer(as.logical(step.pred))
-success <- test$success
+success <- train$success
 table(step.pred, success)
 
 
@@ -113,9 +114,8 @@ x <- model.matrix(success ~ imonth+provstate+suicide+factor(attacktype1)+factor(
 y <- train$success
 
 x_test <- model.matrix(success ~ imonth+provstate+suicide+factor(attacktype1)+factor(targtype1)+
-                         factor(weaptype1)+factor(propextent), data = test)[, -1]
-x_test <- as.data.frame(x_test)
-x_test <- transpose(x_test)
+                         factor(weaptype1)+factor(propextent), data = test)
+
 y_test <- test$success
 
 
@@ -123,14 +123,17 @@ cv.lasso <- cv.glmnet(x, y, family = "binomial", alpha = 1, type.measure = "defa
 
 plot(cv.lasso)
 
-
 coef(cv.lasso, cv.lasso$lambda.min)
 
 coef(cv.lasso, cv.lasso$lambda.1se)
 
 lambda_min <- cv.lasso$lambda.min
 
-confusion.glmnet(cv.lasso$lambda.min, newx = x_test, newy = y_test, family = "binomial")
+lasso.model <- glmnet(x, y, alpha = 1,family = "binomial", lambda = cv.lasso$lambda.1se)
+
+idmin = match(cv.lasso$lambda.min, cv.lasso$lambda)
+
+confusion.glmnet(cv.lasso$fit.preval, newy = y, family = "binomial")[[idmin]]
 
 # Run trees models
 
